@@ -28,10 +28,13 @@ bislang nur Python 3.11–3.13.
 - Zustandsversionsschutz
 - Ereigniskonsistenz
 
+## Gegen echte externe Dienste ausgeführt
+- GitHub Actions: Prüfkette am 2026-09-06 auf Python 3.11, 3.12 und 3.13
+  erfolgreich durchlaufen (Lauf 34052132375)
+
 ## Noch nicht gegen echte externe Dienste ausgeführt
 - PostgreSQL-Server
 - Redis-Server
-- externe CI-Plattform
 - externe Identitätsdienste
 - produktive Container-Orchestrierung
 
