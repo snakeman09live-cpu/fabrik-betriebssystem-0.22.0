@@ -8,8 +8,9 @@ from .sicherheit import Sicherheitsdienst
 from .entscheidungsintelligenz import Entscheidungsintelligenz, Entscheidungsgrundlage
 from pathlib import Path
 from .produktionsbetrieb import Produktionsbetrieb
+from . import __version__
 
-app=FastAPI(title='Fabrik-Betriebssystem', version='0.18.0')
+app=FastAPI(title='Fabrik-Betriebssystem', version=__version__)
 betrieb=Produktionsbetrieb(); db=betrieb.db; orchestrator=Orchestrator(db)
 vertraege=Vertragsregister(); vertraege.registrieren(Vertragseintrag('zustandsuebergang','1.0.0','zustandsuebergang','1.0.0','ZUSTANDSUEBERGANG'))
 schemata=Schemaregister(Path(__file__).resolve().parent.parent / 'schemas')

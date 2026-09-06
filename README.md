@@ -1,37 +1,63 @@
 # Fabrik-Betriebssystem – Referenzimplementierung 0.22.0
 
-## Release
-0.22.0 – Verteilte Konsistenz und robuste Ereignisverarbeitung.
+Referenzimplementierung eines Fabrik-Betriebssystems mit persistenter
+Zustandsführung, verteilter Konsistenz und ereignisgetriebener Verarbeitung.
 
-### Kern des Releases
-- persistenter Ausgabepuffer (Outbox)
-- persistenter Eingangsschutz (Inbox)
-- Lease-basierte Übernahme und Wiederübernahme
-- Bestätigung nur durch gültigen Lease-Besitzer
-- zentrale Produktionskonfiguration und Composition Root
-- austauschbarer Nachrichtenbroker mit lokaler Referenz und optionalem Redis-Adapter
-- Gesundheits- und Bereitschaftsprüfung
-- Datenbankverbindung über `FABRIK_DATENBANK_URL`
-- persistente Governance-/Laufzeitmodelle aus den vorherigen Versionen
-- öffentliche `/gesundheit`- und `/bereitschaft`-Endpunkte
-- konsistente Paket-/API-Version 0.18.0
+## Installation
 
-### Konfigurationsvariablen
-- `FABRIK_DATENBANK_URL`
-- `FABRIK_UMGEBUNG`
-- `FABRIK_INSTANZKENNUNG`
-- `FABRIK_MAXIMALE_WIEDERHOLUNGEN`
+```bash
+python -m venv .venv
+.venv/Scripts/activate        # Linux/macOS: source .venv/bin/activate
+pip install -e ".[test]"
+```
 
-### Prüfung
-- 40/40 Tests bestanden
-- Python-Kompilierungsprüfung bestanden
-- lokaler Demo-Lauf bestanden
+## Start
 
-### Statusgrenze
-PostgreSQL, Redis und externe Identitätsdienste sind als Zielintegrationen vorbereitet, wurden in dieser isolierten Umgebung jedoch nicht gegen reale externe Dienste ausgeführt.
+```bash
+fabrik-api                    # HTTP-Schnittstelle
+fabrik-worker                 # Aufgabenverarbeitung
+fabrik-ablaufplaner           # Ablaufplanung
+```
 
+Alternativ das vollständige Gespann mit PostgreSQL und Redis:
+
+```bash
+docker compose up
+```
+
+## Konfigurationsvariablen
+
+| Variable | Bedeutung |
+| --- | --- |
+| `FABRIK_DATENBANK_URL` | Datenbankverbindung (Standard: lokales SQLite) |
+| `FABRIK_UMGEBUNG` | Betriebsumgebung, z. B. `PRODUKTION` |
+| `FABRIK_INSTANZKENNUNG` | Kennung der laufenden Instanz für Lease-Besitz |
+| `FABRIK_MAXIMALE_WIEDERHOLUNGEN` | Obergrenze für Wiederholungsversuche |
+| `FABRIK_REDIS_URL` | Broker-Adresse, wenn der Redis-Adapter genutzt wird |
+| `FABRIK_DB_PASSWORT` | Datenbankpasswort für `docker compose` (Standard: `fabrik`) |
+
+## Öffentliche Endpunkte
+
+- `/gesundheit` – Lebendigkeitsprüfung
+- `/bereitschaft` – Bereitschaftsprüfung
+
+---
+
+# Versionsverlauf
+
+## 0.22.0 – Verteilte Konsistenz und robuste Ereignisverarbeitung
+
+- transaktionaler Ausgabepuffer (Outbox) mit datenbankbasiertem Lease
+- dauerhafter Eingangsschutz (Inbox) gegen doppelte Konsumierung
+- Lease-basierte Übernahme und Wiederübernahme nach abgelaufenem Lease
+- Bestätigung nur durch den gültigen Lease-Besitzer
+- Normalisierung von naiven und UTC-Zeitstempeln
+- zentrale Anwendung bindet Inbox und Ausgabepuffer ein
+- Paket- und API-Version konsistent auf 0.22.0; die API liest die Version
+  aus `fabrik_betriebssystem.__version__`, damit sie nicht erneut abdriftet
 
 ## 0.20.0 – Betriebs- und Bereitstellungsrelease
+
 - getrennte API-, Worker- und Ablaufplaner-Startbefehle
 - Dockerfile und Docker Compose mit PostgreSQL und Redis
 - CI-Prüfkette für Python 3.11–3.13
@@ -39,18 +65,24 @@ PostgreSQL, Redis und externe Identitätsdienste sind als Zielintegrationen vorb
 - Ende-zu-Ende-HTTP-Prüfung
 - Konfiguration über Umgebungsvariablen
 
-### Statusgrenze
-PostgreSQL/Redis-Container und externe CI-Plattformen sind in der isolierten Umgebung nicht gestartet worden. Die lokale Referenzsuite wurde ausgeführt.
+## 0.18.0 – Produktionskern
 
+- zentrale Produktionskonfiguration und Composition Root
+- austauschbarer Nachrichtenbroker mit lokaler Referenz und optionalem
+  Redis-Adapter
+- Gesundheits- und Bereitschaftsprüfung
+- Datenbankverbindung über `FABRIK_DATENBANK_URL`
+- persistente Governance- und Laufzeitmodelle
 
-## Version 0.22.0 – verteilte Konsistenz
+---
 
-Neu implementiert:
-- transaktionaler Ausgabepuffer mit datenbankbasiertem Lease
-- dauerhafter Inbox-Schutz gegen doppelte Konsumierung
-- Wiederübernahme nach abgelaufenem Lease
-- Bestätigung nur durch den gültigen Lease-Besitzer
-- Normalisierung von naiven/UTC-Zeitstempeln
-- zentrale Anwendung bindet Inbox und Ausgabepuffer ein
+## Prüfung
 
-Prüfung: 52/52 Tests bestanden; Python-Kompilierung bestanden; Demo als Modul erfolgreich.
+Der aktuelle Prüfstand ist in [RELEASE_STATUS.md](RELEASE_STATUS.md)
+dokumentiert.
+
+## Statusgrenze
+
+PostgreSQL, Redis und externe Identitätsdienste sind als Zielintegrationen
+vorbereitet, wurden in der isolierten Entwicklungsumgebung jedoch nicht gegen
+reale externe Dienste ausgeführt. Die lokale Referenzsuite wurde ausgeführt.
