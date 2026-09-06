@@ -1,0 +1,60 @@
+services:
+  api:
+    build: .
+    environment:
+      FABRIK_UMGEBUNG: PRODUKTION
+      FABRIK_DATENBANK_URL: postgresql+psycopg://fabrik:fabrik@postgres:5432/fabrik
+      FABRIK_REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  worker:
+    build: .
+    command: ["fabrik-worker"]
+    environment:
+      FABRIK_UMGEBUNG: PRODUKTION
+      FABRIK_DATENBANK_URL: postgresql+psycopg://fabrik:fabrik@postgres:5432/fabrik
+      FABRIK_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  scheduler:
+    build: .
+    command: ["fabrik-ablaufplaner"]
+    environment:
+      FABRIK_UMGEBUNG: PRODUKTION
+      FABRIK_DATENBANK_URL: postgresql+psycopg://fabrik:fabrik@postgres:5432/fabrik
+      FABRIK_REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: fabrik
+      POSTGRES_USER: fabrik
+      POSTGRES_PASSWORD: fabrik
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fabrik -d fabrik"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - fabrik-postgres:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+
+volumes:
+  fabrik-postgres:

@@ -1,0 +1,568 @@
+{
+  "$defs": {
+    "Aktion": {
+      "enum": [
+        "ERSTELLEN",
+        "VORBEREITEN",
+        "STARTEN",
+        "EINREIHEN",
+        "WARTEN",
+        "FORTSETZEN",
+        "PAUSIEREN",
+        "ABBRECHEN",
+        "WIEDERHOLUNGSVERSUCH",
+        "NEUAUSFUEHRUNG",
+        "NEUPLANUNG",
+        "WIEDERHERSTELLEN",
+        "ZURUECKSETZEN",
+        "ABSCHLIESSEN",
+        "FEHLSCHLAGEN",
+        "HOEHERSTUFEN",
+        "BEREITSTELLEN",
+        "AKTIVIEREN",
+        "ABLAUFEN_LASSEN",
+        "ABLOESEN",
+        "AUSSER_BETRIEB_NEHMEN"
+      ],
+      "title": "Aktion",
+      "type": "string"
+    },
+    "Anwendbarkeit": {
+      "additionalProperties": false,
+      "properties": {
+        "fachbereich": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Fachbereich"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "umgebung": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Umgebung"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "zustaendigkeitsbereich": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Zustaendigkeitsbereich"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Anwendbarkeit",
+      "type": "object"
+    },
+    "Ausfuehrung": {
+      "additionalProperties": false,
+      "properties": {
+        "faehigkeiten": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Faehigkeiten",
+          "type": "array"
+        },
+        "benoetigte_ressourcen": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Benoetigte Ressourcen",
+          "type": "array"
+        },
+        "ressourcenverfuegbarkeit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Ressourcenverfuegbarkeit"
+        }
+      },
+      "title": "Ausfuehrung",
+      "type": "object"
+    },
+    "Delegationsbezug": {
+      "additionalProperties": false,
+      "properties": {
+        "delegationskennung": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delegationskennung"
+        },
+        "delegationsversion": {
+          "anyOf": [
+            {
+              "minimum": 1,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Delegationsversion"
+        }
+      },
+      "title": "Delegationsbezug",
+      "type": "object"
+    },
+    "Entitaet": {
+      "additionalProperties": false,
+      "properties": {
+        "entitaetstyp": {
+          "$ref": "#/$defs/Entitaetstyp"
+        },
+        "entitaetskennung": {
+          "maxLength": 255,
+          "minLength": 1,
+          "title": "Entitaetskennung",
+          "type": "string"
+        },
+        "organisationskennung": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Organisationskennung"
+        },
+        "fabrikkennung": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Fabrikkennung"
+        },
+        "projektkennung": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Projektkennung"
+        }
+      },
+      "required": [
+        "entitaetstyp",
+        "entitaetskennung"
+      ],
+      "title": "Entitaet",
+      "type": "object"
+    },
+    "Entitaetstyp": {
+      "enum": [
+        "AUSFUEHRUNGSLAUF",
+        "AUFGABE",
+        "BAUVORGANG",
+        "BEREITSTELLUNG",
+        "ARTEFAKT",
+        "GENEHMIGUNG",
+        "BETRIEBSSTOERUNG",
+        "PROJEKT",
+        "FABRIK",
+        "AUSFUEHRUNGSEINHEIT",
+        "RESSOURCE"
+      ],
+      "title": "Entitaetstyp",
+      "type": "string"
+    },
+    "Fachbereich": {
+      "enum": [
+        "BENUTZER",
+        "PROJEKT",
+        "FABRIK",
+        "STEUERUNG",
+        "BETRIEB",
+        "SICHERHEIT",
+        "KOSTEN",
+        "QUALITAET",
+        "BEREITSTELLUNG",
+        "WIEDERHERSTELLUNG",
+        "REGELKONFORMITAET",
+        "RISIKO"
+      ],
+      "title": "Fachbereich",
+      "type": "string"
+    },
+    "Genehmigungsbezug": {
+      "additionalProperties": false,
+      "properties": {
+        "genehmigungskennung": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Genehmigungskennung"
+        },
+        "genehmigungszustand": {
+          "title": "Genehmigungszustand",
+          "type": "string"
+        }
+      },
+      "required": [
+        "genehmigungszustand"
+      ],
+      "title": "Genehmigungsbezug",
+      "type": "object"
+    },
+    "Herkunft": {
+      "additionalProperties": false,
+      "properties": {
+        "quelle": {
+          "$ref": "#/$defs/Quelle"
+        },
+        "zusammenhangskennung": {
+          "title": "Zusammenhangskennung",
+          "type": "string"
+        },
+        "ablaufverfolgungskennung": {
+          "title": "Ablaufverfolgungskennung",
+          "type": "string"
+        }
+      },
+      "required": [
+        "quelle",
+        "zusammenhangskennung",
+        "ablaufverfolgungskennung"
+      ],
+      "title": "Herkunft",
+      "type": "object"
+    },
+    "Lebenszyklus": {
+      "additionalProperties": false,
+      "properties": {
+        "zustand": {
+          "$ref": "#/$defs/Zustand"
+        },
+        "zustandsversion": {
+          "minimum": 0,
+          "title": "Zustandsversion",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "zustand",
+        "zustandsversion"
+      ],
+      "title": "Lebenszyklus",
+      "type": "object"
+    },
+    "Nebenlaeufigkeit": {
+      "additionalProperties": false,
+      "properties": {
+        "erwartete_zustandsversion": {
+          "anyOf": [
+            {
+              "minimum": 0,
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Erwartete Zustandsversion"
+        },
+        "idempotenzkennung": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Idempotenzkennung"
+        }
+      },
+      "title": "Nebenlaeufigkeit",
+      "type": "object"
+    },
+    "Quelle": {
+      "enum": [
+        "BENUTZER",
+        "SCHNITTSTELLE",
+        "ARBEITSABLAUF",
+        "SYSTEM",
+        "BETREIBER",
+        "ABLAUFPLANER",
+        "WIEDERHERSTELLUNG"
+      ],
+      "title": "Quelle",
+      "type": "string"
+    },
+    "Richtlinienbezug": {
+      "additionalProperties": false,
+      "properties": {
+        "richtlinienkennung": {
+          "title": "Richtlinienkennung",
+          "type": "string"
+        },
+        "richtlinienversion": {
+          "title": "Richtlinienversion",
+          "type": "string"
+        }
+      },
+      "required": [
+        "richtlinienkennung",
+        "richtlinienversion"
+      ],
+      "title": "Richtlinienbezug",
+      "type": "object"
+    },
+    "Risikostufe": {
+      "enum": [
+        "KEIN_RISIKO",
+        "NIEDRIG",
+        "MITTEL",
+        "HOCH",
+        "KRITISCH"
+      ],
+      "title": "Risikostufe",
+      "type": "string"
+    },
+    "Steuerung": {
+      "additionalProperties": false,
+      "properties": {
+        "risiko": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Risikostufe"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "richtlinie": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Richtlinienbezug"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "genehmigung": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Genehmigungsbezug"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        },
+        "delegation": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Delegationsbezug"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "title": "Steuerung",
+      "type": "object"
+    },
+    "Umgebung": {
+      "enum": [
+        "SIMULATION",
+        "ENTWICKLUNG",
+        "BEREITSTELLUNGSVORSTUFE",
+        "PRODUKTION"
+      ],
+      "title": "Umgebung",
+      "type": "string"
+    },
+    "Vorgang": {
+      "additionalProperties": false,
+      "properties": {
+        "aktion": {
+          "$ref": "#/$defs/Aktion"
+        },
+        "beantragt_durch": {
+          "minLength": 1,
+          "title": "Beantragt Durch",
+          "type": "string"
+        },
+        "anfragekennung": {
+          "minLength": 1,
+          "title": "Anfragekennung",
+          "type": "string"
+        }
+      },
+      "required": [
+        "aktion",
+        "beantragt_durch",
+        "anfragekennung"
+      ],
+      "title": "Vorgang",
+      "type": "object"
+    },
+    "Zeitbezug": {
+      "additionalProperties": false,
+      "properties": {
+        "beobachtet_am": {
+          "format": "date-time",
+          "title": "Beobachtet Am",
+          "type": "string"
+        },
+        "gueltig_ab": {
+          "format": "date-time",
+          "title": "Gueltig Ab",
+          "type": "string"
+        }
+      },
+      "required": [
+        "beobachtet_am",
+        "gueltig_ab"
+      ],
+      "title": "Zeitbezug",
+      "type": "object"
+    },
+    "Zustaendigkeitsbereich": {
+      "enum": [
+        "GESAMT",
+        "ORGANISATION",
+        "FABRIK",
+        "PROJEKT",
+        "RESSOURCE",
+        "AUSFUEHRUNGSLAUF",
+        "AUFGABE"
+      ],
+      "title": "Zustaendigkeitsbereich",
+      "type": "string"
+    },
+    "Zustand": {
+      "enum": [
+        "INITIAL",
+        "VORBEREITUNG",
+        "BEREIT",
+        "WARTEND",
+        "AKTIV",
+        "PAUSIERT",
+        "BLOCKIERT",
+        "FEHLERBEHANDLUNG",
+        "WIEDERHERSTELLUNG",
+        "ABSCHLUSSBEARBEITUNG",
+        "ABGESCHLOSSEN",
+        "FEHLGESCHLAGEN",
+        "ABGEBROCHEN",
+        "ZURUECKGESETZT",
+        "ABGELAUFEN",
+        "ABGELOEST",
+        "AUSSER_BETRIEB"
+      ],
+      "title": "Zustand",
+      "type": "string"
+    }
+  },
+  "additionalProperties": false,
+  "properties": {
+    "kontextkennung": {
+      "title": "Kontextkennung",
+      "type": "string"
+    },
+    "kontextversion": {
+      "title": "Kontextversion",
+      "type": "string"
+    },
+    "entitaet": {
+      "$ref": "#/$defs/Entitaet"
+    },
+    "lebenszyklus": {
+      "$ref": "#/$defs/Lebenszyklus"
+    },
+    "vorgang": {
+      "$ref": "#/$defs/Vorgang"
+    },
+    "anwendbarkeit": {
+      "$ref": "#/$defs/Anwendbarkeit"
+    },
+    "steuerung": {
+      "$ref": "#/$defs/Steuerung"
+    },
+    "ausfuehrung": {
+      "$ref": "#/$defs/Ausfuehrung"
+    },
+    "nebenlaeufigkeit": {
+      "$ref": "#/$defs/Nebenlaeufigkeit"
+    },
+    "zeitbezug": {
+      "$ref": "#/$defs/Zeitbezug"
+    },
+    "herkunft": {
+      "$ref": "#/$defs/Herkunft"
+    }
+  },
+  "required": [
+    "kontextkennung",
+    "kontextversion",
+    "entitaet",
+    "lebenszyklus",
+    "vorgang",
+    "anwendbarkeit",
+    "steuerung",
+    "ausfuehrung",
+    "nebenlaeufigkeit",
+    "zeitbezug",
+    "herkunft"
+  ],
+  "title": "Uebergangskontext",
+  "type": "object",
+  "$id": "https://fabrik-betriebssystem.local/schemata/uebergangskontext/1.0.0",
+  "titel": "Uebergangskontext"
+}
