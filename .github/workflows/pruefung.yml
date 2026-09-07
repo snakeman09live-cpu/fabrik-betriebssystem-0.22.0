@@ -4,8 +4,39 @@ jobs:
   pruefung:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
-        python: ['3.11', '3.12', '3.13']
+        python: ['3.11', '3.12', '3.13', '3.14']
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: fabrik
+          POSTGRES_USER: fabrik
+          POSTGRES_PASSWORD: fabrik
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U fabrik -d fabrik"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      FABRIK_TEST_POSTGRES_URL: postgresql+psycopg://fabrik:fabrik@localhost:5432/fabrik
+      FABRIK_TEST_REDIS_URL: redis://localhost:6379/0
+
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -14,4 +45,40 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install -e '.[test]'
       - run: python -m compileall -q fabrik_betriebssystem
-      - run: pytest -q
+
+      - name: SQL-Migrationen gegen PostgreSQL einspielen
+        # Bewusst in eine eigene Datenbank: die Migrationen decken nur einen
+        # Teil der Tabellen ab und weichen im Spaltentyp von den ORM-Modellen
+        # ab (ausgabepuffer.erstellt_am ist TIMESTAMP statt TIMESTAMPTZ).
+        # Geprüft wird hier daher nur, dass sie gegen echtes PostgreSQL
+        # ausführbar und wiederholbar sind, ohne die Prüfsuite daran zu binden.
+        run: |
+          export PGPASSWORD=fabrik
+          psql -h localhost -U fabrik -d fabrik -v ON_ERROR_STOP=1 \
+            -c "CREATE DATABASE fabrik_migrationen"
+          for durchlauf in 1 2; do
+            echo "== Durchlauf $durchlauf (Migrationen müssen wiederholbar sein)"
+            for datei in migrations/*.sql; do
+              echo "-- $datei"
+              psql -h localhost -U fabrik -d fabrik_migrationen -v ON_ERROR_STOP=1 -f "$datei"
+            done
+          done
+          psql -h localhost -U fabrik -d fabrik_migrationen -v ON_ERROR_STOP=1 \
+            -c "SELECT migrationskennung, version FROM migrationsstand"
+        shell: bash
+
+      - name: Gesamte Prüfsuite
+        run: pytest -q
+
+      - name: Integrationsprüfungen müssen wirklich gelaufen sein
+        # Ohne diese Absicherung würde ein Tippfehler in den Umgebungsvariablen
+        # die Integrationsprüfungen unbemerkt auf "skipped" setzen und die CI
+        # bliebe grün, ohne die externen Dienste je berührt zu haben.
+        run: |
+          pytest tests/test_postgres_integration.py tests/test_redis_broker_integration.py \
+            -q --no-header -rs | tee integrationsergebnis.txt
+          if grep -qi "skipped" integrationsergebnis.txt; then
+            echo "FEHLER: Integrationsprüfungen wurden übersprungen, die externen Dienste wurden nicht geprüft."
+            exit 1
+          fi
+        shell: bash

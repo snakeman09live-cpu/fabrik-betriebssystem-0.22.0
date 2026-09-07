@@ -62,4 +62,14 @@ class RedisBroker:
         if not lease or lease.get('kunde')!=kunde: return False
         self.client.delete(key); self.client.lrem('fabrik:in_bearbeitung',0,lease['inhalt']); return True
     def zurueckstellen(self, kunde: str, auftragskennung: str) -> bool:
-        return self.bestaetigen(kunde, auftragskennung)
+        # Nicht an bestaetigen() delegieren: Zurueckstellen muss den Auftrag
+        # erneut uebernehmbar machen, nicht verwerfen.
+        key=f'fabrik:lease:{auftragskennung}'; lease=self.client.hgetall(key)
+        if not lease or lease.get('kunde')!=kunde: return False
+        inhalt=lease['inhalt']
+        pipe=self.client.pipeline()
+        pipe.lrem('fabrik:in_bearbeitung',0,inhalt)
+        pipe.lpush('fabrik:auftraege',inhalt)
+        pipe.delete(key)
+        pipe.execute()
+        return True

@@ -4,7 +4,8 @@ from datetime import datetime, timezone
 from typing import Any, Callable
 import hashlib
 
-from sqlalchemy import Boolean, DateTime, Integer, String, Text, select
+from sqlalchemy import Boolean, DateTime, Integer, String, Text, insert, select, update
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .persistenz import Basis, Datenbank
@@ -52,23 +53,49 @@ class TransaktionalerAusgabepuffer:
         self.db = db
         self.lease_sekunden = lease_sekunden
 
+    def _lease_erwerben(self, s, kennung: str, besitzer: str, now: datetime, ende: datetime) -> bool:
+        """Erwirbt den Lease einer Nachricht atomar.
+
+        Gibt False zurück, wenn ein anderer Zusteller den Lease hält oder ein
+        paralleler Zusteller zwischen Lesen und Schreiben schneller war.
+
+        Ob ein Lease abgelaufen ist, wird in Python entschieden, weil SQLite
+        keine Zeitzone speichert und ein SQL-seitiger Zeitvergleich zwischen
+        SQLite und PostgreSQL unterschiedlich ausfiele. Geschrieben wird per
+        Compare-and-Set auf den gelesenen Werten, damit sich zwei Zusteller
+        nicht gegenseitig den Lease überschreiben.
+        """
+        lease = s.get(AusgabepufferLease, kennung)
+        if lease is None:
+            try:
+                with s.begin_nested():
+                    s.execute(insert(AusgabepufferLease).values(
+                        nachrichtenkennung=kennung, besitzer=besitzer, lease_bis=ende))
+                return True
+            except IntegrityError:
+                return False
+        if utc(lease.lease_bis) > now and lease.besitzer != besitzer:
+            return False
+        alter_besitzer, altes_ende = lease.besitzer, lease.lease_bis
+        s.expunge(lease)
+        getroffen = s.execute(update(AusgabepufferLease)
+                              .where(AusgabepufferLease.nachrichtenkennung == kennung,
+                                     AusgabepufferLease.besitzer == alter_besitzer,
+                                     AusgabepufferLease.lease_bis == altes_ende)
+                              .values(besitzer=besitzer, lease_bis=ende))
+        return getroffen.rowcount == 1
+
     def uebernehmen(self, besitzer: str, limit: int = 100) -> list[AusgabepufferAuftrag]:
+        import json
+        from .persistenz import Ausgabepufferdaten
         now = jetzt()
         ende = datetime.fromtimestamp(now.timestamp() + self.lease_sekunden, tz=timezone.utc)
         result: list[AusgabepufferAuftrag] = []
         with self.db.session() as s:
-            # Lease-Operation bewusst atomar pro Nachricht; SQLite und PostgreSQL werden damit gleich behandelt.
-            from .persistenz import Ausgabepufferdaten
             offene = s.scalars(select(Ausgabepufferdaten).where(Ausgabepufferdaten.bestaetigt.is_(False)).order_by(Ausgabepufferdaten.erstellt_am).limit(limit * 2)).all()
             for row in offene:
-                lease = s.get(AusgabepufferLease, row.kennung)
-                if lease and utc(lease.lease_bis) > now and lease.besitzer != besitzer:
+                if not self._lease_erwerben(s, row.kennung, besitzer, now, ende):
                     continue
-                if lease is None:
-                    s.add(AusgabepufferLease(nachrichtenkennung=row.kennung, besitzer=besitzer, lease_bis=ende))
-                else:
-                    lease.besitzer, lease.lease_bis = besitzer, ende
-                import json
                 result.append(AusgabepufferAuftrag(row.kennung, row.kanal, json.loads(row.nutzlast), ende))
                 if len(result) >= limit:
                     break
